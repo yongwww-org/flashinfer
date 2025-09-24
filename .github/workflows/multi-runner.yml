@@ -1,0 +1,41 @@
+name: Test Multi-Runners
+on: 
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  test-x64:
+    runs-on: [self-hosted, linux, x64, amazon]
+    steps:
+      - run: |
+          echo "Running on x64 runner"
+          echo "Instance type: r6a.12xlarge (48 vCPUs, 384 GB RAM)"
+          nproc
+          free -h
+  
+  test-arm64:
+    runs-on: [self-hosted, linux, arm64, amazon]
+    steps:
+      - run: |
+          echo "Running on ARM64 runner"
+          echo "Instance type: m6gd.16xlarge (64 vCPUs, 256 GB RAM)"
+          nproc
+          free -h
+  
+  test-ubuntu:
+    runs-on: [self-hosted, linux, x64, ubuntu-latest]
+    steps:
+      - run: |
+          echo "Running on Ubuntu 24.04"
+          lsb_release -a
+          nproc
+          free -h
+  
+  test-windows:
+    runs-on: [self-hosted, windows, x64, servercore-2022]
+    steps:
+      - run: |
+          Write-Host "Running on Windows Server 2022"
+          Get-WmiObject Win32_Processor | Select-Object Name, NumberOfCores
+          Get-WmiObject Win32_OperatingSystem | Select-Object TotalVisibleMemorySize
