@@ -20,9 +20,13 @@ import torch
 from tests.test_helpers.jit_utils import gen_prefill_attention_modules
 
 import flashinfer
+from flashinfer.utils import has_flashinfer_jit_cache
 
 
-@pytest.fixture(autouse=True, scope="module")
+@pytest.fixture(
+    autouse=not has_flashinfer_jit_cache(),
+    scope="module",
+)
 def warmup_jit():
     flashinfer.jit.build_jit_specs(
         gen_prefill_attention_modules(
@@ -140,13 +144,17 @@ def test_batch_prefill_with_paged_kv_cache(
             logits_soft_cap=logits_soft_cap,
         )
         if return_lse:
-            o, _ = wrapper.run(q, kv_data, return_lse=True)
+            o, lse = wrapper.run(q, kv_data, return_lse=True)
         else:
             o = wrapper.run(q, kv_data)
 
         # test with pre-allocated output
         o_buffer = torch.empty_like(o)
-        wrapper.run(q, kv_data, out=o_buffer)
+        if return_lse:
+            lse_buffer = torch.empty_like(lse)
+            wrapper.run(q, kv_data, out=o_buffer, lse=lse_buffer, return_lse=True)
+        else:
+            wrapper.run(q, kv_data, out=o_buffer)
         torch.testing.assert_close(o, o_buffer, rtol=1e-3, atol=1e-3)
     else:
         q_indptr_buffer = torch.empty(

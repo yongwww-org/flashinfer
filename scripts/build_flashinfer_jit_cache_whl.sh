@@ -11,7 +11,8 @@ echo "=========================================="
 # MAX_JOBS = min(nproc, max(1, MemAvailable_GB/4))
 MEM_AVAILABLE_GB=$(free -g | awk '/^Mem:/ {print $7}')
 NPROC=$(nproc)
-MAX_JOBS=$(( MEM_AVAILABLE_GB / $([ "$(uname -m)" = "aarch64" ] && echo 8 || echo 4) ))
+# MAX_JOBS=$(( MEM_AVAILABLE_GB / $([ "$(uname -m)" = "aarch64" ] && echo 8 || echo 4) ))
+MAX_JOBS=$(( MEM_AVAILABLE_GB / 8 ))
 if (( MAX_JOBS < 1 )); then
   MAX_JOBS=1
 elif (( NPROC < MAX_JOBS )); then
@@ -25,10 +26,12 @@ echo "CUDA Version: ${CUDA_VERSION}"
 echo "CPU Architecture: ${ARCH}"
 echo "CUDA Major: ${CUDA_MAJOR}"
 echo "CUDA Minor: ${CUDA_MINOR}"
-echo "CUDA Version Suffix: ${CUDA_VERSION_SUFFIX}"
+echo "FlashInfer Local Version: ${FLASHINFER_LOCAL_VERSION}"
 echo "CUDA Architectures: ${FLASHINFER_CUDA_ARCH_LIST}"
+echo "Dev Release Suffix: ${FLASHINFER_DEV_RELEASE_SUFFIX}"
 echo "MAX_JOBS: ${MAX_JOBS}"
 echo "Python Version: $(python3 --version)"
+echo "Git commit: $(git rev-parse HEAD 2>/dev/null || echo 'unknown')"
 echo "Working directory: $(pwd)"
 echo ""
 
@@ -61,6 +64,16 @@ echo "✓ Build completed successfully"
 echo ""
 echo "Built wheels:"
 ls -lh dist/
+
+# Verify version and git version
+echo ""
+echo "Verifying version and git version..."
+pip install dist/*.whl
+python -c "
+import flashinfer_jit_cache
+print(f'📦 Package version: {flashinfer_jit_cache.__version__}')
+print(f'🔖 Git version: {flashinfer_jit_cache.__git_version__}')
+"
 
 # Copy wheels to output directory if specified
 if [ -n "${OUTPUT_DIR}" ]; then

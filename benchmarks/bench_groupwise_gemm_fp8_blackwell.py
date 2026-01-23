@@ -167,10 +167,12 @@ def bench_groupwise_gemm_fp8_blackwell(m, n, k, in_dtype, out_dtype):
     b_scale = torch.rand((k // 128, n // 128), dtype=torch.float32, device="cuda")
 
     out = torch.empty((m, n), dtype=out_dtype, device="cuda")
-    gemm_fp8_nt_groupwise(a, b, a_scale, b_scale, out=out)
+    gemm_fp8_nt_groupwise(a, b, a_scale, b_scale, out=out, scale_major_mode="MN")
 
     measurements = bench_gpu_time(
-        lambda: gemm_fp8_nt_groupwise(a, b, a_scale, b_scale, out=out)
+        lambda: gemm_fp8_nt_groupwise(
+            a, b, a_scale, b_scale, out=out, scale_major_mode="MN"
+        )
     )
     ms = np.median(measurements)
     tflops_per_second = 2 * m * n * k * 1e-9 / ms
@@ -192,7 +194,7 @@ def bench_groupwise_gemm_fp8_blackwell(m, n, k, in_dtype, out_dtype):
 
 
 if __name__ == "__main__":
-    for m in [1024, 2048, 4096, 8192]:
+    for m in [1, 8, 16, 32, 512, 1024, 2048, 4096, 8192]:
         for n in [1024, 2048, 4096, 8192]:
             for k in [1024, 2048, 4096, 8192]:
                 bench_groupwise_gemm_fp8_blackwell(

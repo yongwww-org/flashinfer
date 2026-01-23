@@ -18,17 +18,25 @@ import pytest
 import torch
 
 import flashinfer
-from flashinfer.utils import determine_gemm_backend, is_sm90a_supported
+from flashinfer.utils import (
+    determine_gemm_backend,
+    has_flashinfer_jit_cache,
+    is_sm90a_supported,
+)
+from flashinfer.jit.gemm import gen_gemm_module, gen_gemm_sm90_module
 
 DTYPES = [torch.float16]
 CUDA_DEVICES = ["cuda:0"]
 
 
-@pytest.fixture(autouse=True, scope="module")
+@pytest.fixture(
+    autouse=not has_flashinfer_jit_cache(),
+    scope="module",
+)
 def warmup_jit():
-    jit_specs = [flashinfer.gemm.gen_gemm_module()]
+    jit_specs = [gen_gemm_module()]
     if is_sm90a_supported(torch.device("cuda:0")):
-        jit_specs.append(flashinfer.gemm.gen_gemm_sm90_module())
+        jit_specs.append(gen_gemm_sm90_module())
     flashinfer.jit.build_jit_specs(jit_specs, verbose=False)
     yield
 
